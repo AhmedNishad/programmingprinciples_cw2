@@ -12,12 +12,16 @@ public class PassengerSimulationManager {
     public int totalDelay = 0;
     public static int iterationCount = 0;
     public boolean running = true;
+    private int currentBatchSize = 0;
+    private int pastBatchSize = 0;
+    private int iterationTime = 0;
 
     public PassengerSimulationManager(TrainStation station) throws Exception {
         this.station = station;
 
         // create an initial batch
         int initialBatch = 4;
+        currentBatchSize = initialBatch;
         System.out.println("Initial iteration of size " + initialBatch);
         // Add the simlation objects
         for(int i = 0; i < initialBatch; i++) {
@@ -65,6 +69,9 @@ public class PassengerSimulationManager {
         }
 
         int nextBatch = station.getBatchSize();
+        pastBatchSize = currentBatchSize;
+        currentBatchSize = nextBatch;
+        PassengerSimulation.iterationDuration = 0;
         System.out.println("Next iteration of size " + nextBatch);
         ArrayList<Passenger> moved = station.moveToTrainQueue(nextBatch);
         moved.forEach(passenger -> {
@@ -73,8 +80,13 @@ public class PassengerSimulationManager {
         iterationCount++;
     }
 
+    public int generateCondition(int pastBatch, int currentBatch){
+        return (pastBatch + currentBatch)/2;
+    }
+
     public void createAndAddSimulation(Passenger passenger){
-        PassengerSimulation simulation = new PassengerSimulation(passenger, station.getTrainQueue(), this, new Random().nextInt(5)+ 1);
+        //new Random().nextInt(5)+ 1
+        PassengerSimulation simulation = new PassengerSimulation(passenger, station.getTrainQueue(), this, generateCondition(pastBatchSize,currentBatchSize), station.boardedList);
         simulationList.add(simulation);
     }
 }

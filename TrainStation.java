@@ -131,7 +131,7 @@ public class TrainStation extends Application {
             });
             waitingRoomRoot.getChildren().add(passengerBtn);
         }
-
+        waitingRoomRoot.setMinWidth(HEIGHT);
         return waitingRoomRoot;
     }
 
@@ -149,11 +149,12 @@ public class TrainStation extends Application {
             pBtn.setId(String.valueOf(passenger.getSeatNumber()));
             trainQueueRoot.getChildren().add(pBtn);
         }
+        trainQueueRoot.setMinWidth(HEIGHT);
         return trainQueueRoot;
     }
 
-    private BorderPane refreshScene(Stage stage){
-        BorderPane root = new BorderPane();
+    private FlowPane refreshScene(Stage stage){
+        FlowPane root = new FlowPane();
 
 //        MenuItem colombo = new MenuItem("Colombo");
 //        MenuItem kandy = new MenuItem("Kandy");
@@ -163,8 +164,8 @@ public class TrainStation extends Application {
 
         // trips.setAlignment(Pos.CENTER);
         // root.setTop(new FlowPane(trips));
-        root.setCenter(generateWaitingRoom(stage));
-        root.setBottom( trainQueue.display()); //generateTrainQueue());
+        root.getChildren().add(generateWaitingRoom(stage));
+        root.getChildren().add( trainQueue.display()); //generateTrainQueue());
         Button board = new Button("Board");
         board.setPadding(new Insets(20));
         board.setStyle("-fx-background-color:#cdffa3;");
@@ -177,7 +178,7 @@ public class TrainStation extends Application {
             stage.getScene().setRoot(refreshScene(stage));
         });
         Label batchCount = new Label(String.valueOf(batchSize));
-        root.setLeft(new VBox(board, batchCount));
+        root.getChildren().add(new VBox(board, batchCount));
         return root;
     }
     // endregion
@@ -185,18 +186,18 @@ public class TrainStation extends Application {
     public void addPassengerToTrainQueue(){
         newStage.setResizable(true);
         newStage.setTitle("Add Passengers");
-        BorderPane root = new BorderPane();
+        FlowPane root = new FlowPane();
 //        Button stop = new Button("Select Stop");
 //        stop.setAlignment(Pos.TOP_CENTER);
 //        root.setTop(new HBox(stop));
-        root.setCenter(generateWaitingRoom(newStage));
-        root.setBottom(trainQueue.display());   //generateTrainQueue());
+        root.getChildren().add(generateWaitingRoom(newStage));
+        root.getChildren().add(trainQueue.display());   //generateTrainQueue());
         Button board = new Button("Board");
         board.setOnMouseClicked((e)->{
             board();
         });
         board.setAlignment(Pos.BOTTOM_CENTER);
-        root.setLeft(new VBox(board));
+        root.getChildren().add(new VBox(board));
 
         Scene scene = new Scene(refreshScene(newStage), WIDTH, HEIGHT);
         newStage.setScene(scene);
@@ -364,8 +365,16 @@ public class TrainStation extends Application {
         }
     }
 
+    public void duplicate(){
+        waitingRoomClone = copyPassengers(waitingRoom);
+        trainQueueArrayClone = copyPassengers(trainQueue.getQueueArray());
+        boardedArrayClone = copyPassengers(boardedList);
+    }
+
     public void simulateAndReport() throws IOException {
         // Populate train station waiting room with passengers
+        duplicate();
+        clearAll();
         populateWaitingList(TestData.passengerList);
         int initialWaitingSize = getWaitingRoomLength();
 
@@ -376,43 +385,25 @@ public class TrainStation extends Application {
             e.printStackTrace();
         }
         manager.iterationCount = 0;
-        // region Intuitive Implementation
-//        while(true){
-//            if(isWaitingRoomEmpty())
-//                break;
-//
-//            // Randomize how many passengers join train queue at a time
-//            // Move said passengers to train queue
-//            int passengerBatch = getBatchSize();
-//            //System.out.println("Taking " + passengerBatch + " out of waiting list");
-//            moveToTrainQueue(passengerBatch);
-//
-//            for(int i = 0; i < passengerBatch; i++) {
-//                // Randomize processing delay and add next to board
-//                int delay = rand.nextInt(16) + 3;
-//                if(delay < minWaiting)
-//                    minWaiting = delay;
-//                if(delay > maxWaiting)
-//                    maxWaiting = delay;
-//                //System.out.println("Delay of " + delay);
-//                totalDelay += delay;
-//                // Add Processing Delay to all train queue
-//                trainQueue.addDelayToAll(delay);
-//                // Remove next passenger from queue
-//                try {
-//                    trainQueue.remove();
-//                } catch (Exception e) {
-//                    // System.out.println("Empty");
-//                }
-//            }
-//        }
-        //endregion
-
         double avgTime = 0;
         if(initialWaitingSize != 0){
             avgTime = manager.totalDelay/ initialWaitingSize;
         }
         newStage = new Stage();
+        newStage.setTitle("Passenger Breakdown");
+        FlowPane root = new FlowPane();
+        root.setAlignment(Pos.CENTER);
+        for(int i = 0; i < boardedList.size(); i++){
+            Passenger boarded = boardedList.get(i);
+            Button boardedButton = new Button(boarded.getName() + "\n" + boarded.getSeatNumber() + " in queue - " + boarded.getSeconds());
+            boardedButton.setStyle("-fx-background-color:#ffa1f6;");
+            root.getChildren().add(boardedButton);
+        }
+        Scene passengerBreakdown = new Scene(root, 500,600);
+        final Stage dialog = new Stage();
+        dialog.setTitle("Report");
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.initOwner(newStage);
         VBox dialogVbox = new VBox(20);
         dialogVbox.setAlignment(Pos.CENTER);
         dialogVbox.getChildren().add(new Label("Average waiting time"));
@@ -424,7 +415,9 @@ public class TrainStation extends Application {
         dialogVbox.getChildren().add(new Label("Minimum waiting time in queue"));
         dialogVbox.getChildren().add(new Label(String.valueOf(manager.minWaiting)));
         Scene dialogScene = new Scene(dialogVbox, 300, 400);
-        newStage.setScene(dialogScene);
+        dialog.setScene(dialogScene);
+        dialog.show();
+        newStage.setScene(passengerBreakdown);
         newStage.showAndWait();
 
 //        System.out.println("Max length " + trainQueue.getMaxStayInQueue());
@@ -437,7 +430,9 @@ public class TrainStation extends Application {
         //print a summary of the maximum length of the queue attained, the maximum
         // waiting time, the minimum waiting time, and the average waiting time of all the passengers.
         System.out.println("Refresh Underway!");
-        populateWaitingList();
+        waitingRoom = copyPassengers(waitingRoomClone);
+        trainQueue.setArray(copyPassengers(trainQueueArrayClone));
+        boardedList = copyPassengers(boardedArrayClone);
     }
     //endregion
 

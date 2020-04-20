@@ -57,6 +57,15 @@ public class PassengerQueue {
         return removed;
     }
 
+    public Passenger removeSim() throws Exception {
+        if(isEmpty()){
+            throw new Exception("Cannot Remove from Empty queue");
+        }
+
+        Passenger removed = queueArray.remove(0);
+        return removed;
+    }
+
     public boolean isEmpty(){
         boolean empty = false;
         if(queueArray.size() <= 0)
@@ -88,6 +97,10 @@ public class PassengerQueue {
 
     public ArrayList<Passenger> getQueueArray(){
         return this.queueArray;
+    }
+
+    public void setArray(ArrayList<Passenger> passengers){
+        this.queueArray = passengers;
     }
 
     public Passenger getAtIndex(int i){

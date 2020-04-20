@@ -1,5 +1,7 @@
 package sample;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Random;
 
 class PassengerSimulation
@@ -15,9 +17,12 @@ class PassengerSimulation
     public static int simulationCount = 0;
     public int simId;
     private int nextIterationCondition;
+    private ArrayList<Passenger> boardedList;
+    public static int iterationDuration = 0;
 
-    public PassengerSimulation(Passenger passenger, PassengerQueue trainQueue, PassengerSimulationManager manager, int nextIterationCondition){
+    public PassengerSimulation(Passenger passenger, PassengerQueue trainQueue, PassengerSimulationManager manager, int nextIterationCondition, ArrayList<Passenger> boardedList){
         this.nextIterationCondition = nextIterationCondition;
+        this.boardedList = boardedList;
         simulationCount++;
         simId = simulationCount;
         this.passenger = passenger;
@@ -31,7 +36,8 @@ class PassengerSimulation
         int delay = rand.nextInt(16) + 3;
         trainQueue.addDelayToAll(delay);
         try {
-            Passenger removed = trainQueue.remove();
+            Passenger removed = trainQueue.removeSim();
+            boardedList.add(removed);
             passenger = removed;
         } catch (Exception e) {
              System.out.println(e.getMessage());
@@ -41,6 +47,7 @@ class PassengerSimulation
             System.out.println("Iteration Condition " + nextIterationCondition);
         }
         manager.removeSim(this, delay);
+        iterationDuration += delay;
     }
 
     public boolean shouldIterate(){

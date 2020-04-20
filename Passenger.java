@@ -31,7 +31,7 @@ public class Passenger {
         this.seatNumber = seatNumber;
     }
 
-    public void display(){
+    public static void display(){
 
     }
 
